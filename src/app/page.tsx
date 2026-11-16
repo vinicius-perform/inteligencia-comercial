@@ -1,101 +1,205 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Navbar } from '@/components/layout/Navbar';
+import { SettingsModal } from '@/components/layout/SettingsModal';
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
+import { StatCards } from '@/components/dashboard/StatCards';
+import { MainChart } from '@/components/dashboard/MainChart';
+import { BentoCards } from '@/components/dashboard/BentoCards';
+import { ClosersTable } from '@/components/dashboard/ClosersTable';
+import { CloserComparison } from '@/components/dashboard/CloserComparison';
+import { SelfComparison } from '@/components/dashboard/SelfComparison';
+import { DevelopmentPlan } from '@/components/dashboard/DevelopmentPlan';
+import { ClosersModule } from '@/components/closers/ClosersModule';
+import { CallsModule } from '@/components/calls/CallsModule';
+import { DataService } from '@/lib/dataService';
+import { Closer, SalesCall } from '@/types';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'closers' | 'calls'>('dashboard');
+  const [closers, setClosers] = useState<Closer[]>([]);
+  const [calls, setCalls] = useState<SalesCall[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<number>(30);
+  const [selectedCloserId, setSelectedCloserId] = useState<string>('all');
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [preselectedCloserForCalls, setPreselectedCloserForCalls] = useState<string>('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const refreshData = useCallback(() => {
+    setClosers(DataService.getClosers());
+    setCalls(DataService.getCalls());
+  }, []);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  // Cálculo das métricas 100% dinâmico e memoizado
+  const metrics = useMemo(() => {
+    return DataService.getMetrics({
+      periodDays: selectedPeriod,
+      closerId: selectedCloserId,
+      calls,
+      closers,
+    });
+  }, [calls, closers, selectedPeriod, selectedCloserId]);
+
+  const handleAddCloser = (name: string) => {
+    DataService.addCloser(name);
+    refreshData();
+  };
+
+  const handleEditCloser = (id: string, name: string) => {
+    DataService.updateCloser(id, { name });
+    refreshData();
+  };
+
+  const handleToggleCloserStatus = (id: string) => {
+    DataService.toggleCloserStatus(id);
+    refreshData();
+  };
+
+  const handleViewCloserCalls = (closerId: string) => {
+    setPreselectedCloserForCalls(closerId);
+    setActiveTab('calls');
+  };
+
+  const handleAddAndAnalyzeCall = async (callData: {
+    closerId: string;
+    occurredAt: string;
+    transcript: string;
+    saleClosed: boolean;
+    prospectName?: string;
+    dealValue?: number;
+    durationMinutes?: number;
+  }) => {
+    const newCall = await DataService.createAndAnalyzeCall(callData);
+    refreshData();
+    return newCall;
+  };
+
+  const handleReanalyzeCall = async (callId: string) => {
+    await DataService.reanalyzeCall(callId);
+    refreshData();
+  };
+
+  return (
+    <main className="min-h-screen bg-[#F3F4F6] text-[#0C0C0D] flex flex-col items-center font-sans">
+      {/* Barra de Navegação Superior */}
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
+
+      {/* Conteúdo Principal com Transições Suaves e Preservação de Estado */}
+      <div className="w-full max-w-[1400px] px-4 sm:px-6 md:px-12 py-6">
+        {/* ABA 1: DASHBOARD */}
+        <div
+          key={activeTab === 'dashboard' ? 'tab-dashboard-active' : 'tab-dashboard-hidden'}
+          className={activeTab === 'dashboard' ? 'tab-pane-transition space-y-6' : 'hidden'}
+        >
+          <DashboardHeader
+            selectedPeriod={selectedPeriod}
+            setSelectedPeriod={setSelectedPeriod}
+            selectedCloserId={selectedCloserId}
+            setSelectedCloserId={setSelectedCloserId}
+            closers={closers}
+          />
+
+          <StatCards
+            totalCalls={metrics.totalCalls}
+            closedSales={metrics.closedSales}
+            conversionRate={metrics.conversionRate}
+            avgScore={metrics.avgScore}
+            callsEvolution={metrics.callsEvolution}
+            salesEvolution={metrics.salesEvolution}
+            conversionRateEvolution={metrics.conversionRateEvolution}
+          />
+
+          <MainChart
+            calls={metrics.filteredCalls}
+            periodDays={selectedPeriod}
+            callsEvolution={metrics.callsEvolution}
+            onGoToCalls={() => setActiveTab('calls')}
+          />
+
+          <BentoCards
+            conversionRate={metrics.conversionRate}
+            closedSales={metrics.closedSales}
+            totalCalls={metrics.totalCalls}
+            avgScore={metrics.avgScore}
+            conversionRateEvolution={metrics.conversionRateEvolution}
+            bottlenecks={metrics.bottlenecks}
+            onViewDiagnostic={() => {
+              const el = document.getElementById('development-plan-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            onFilterBottleneckCalls={() => {
+              setActiveTab('calls');
+            }}
+          />
+
+          <ClosersTable
+            metrics={metrics.closerMetrics}
+            onSelectCloser={(closerId) => {
+              setSelectedCloserId(closerId);
+              const el = document.getElementById('self-comparison-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            onViewAllClosers={() => setActiveTab('closers')}
+          />
+
+          <div id="closer-comparison-section">
+            <CloserComparison closers={closers} metrics={metrics.closerMetrics} />
+          </div>
+
+          <div id="self-comparison-section">
+            <SelfComparison closers={closers} calls={calls} />
+          </div>
+
+          <div id="development-plan-section">
+            <DevelopmentPlan calls={metrics.filteredCalls} />
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        {/* ABA 2: CLOSERS */}
+        <div
+          key={activeTab === 'closers' ? 'tab-closers-active' : 'tab-closers-hidden'}
+          className={activeTab === 'closers' ? 'tab-pane-transition' : 'hidden'}
         >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+          <ClosersModule
+            closers={closers}
+            calls={calls}
+            metrics={metrics.closerMetrics}
+            onAddCloser={handleAddCloser}
+            onEditCloser={handleEditCloser}
+            onToggleStatus={handleToggleCloserStatus}
+            onViewCloserCalls={handleViewCloserCalls}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        </div>
+
+        {/* ABA 3: CALLS DE VENDAS */}
+        <div
+          key={activeTab === 'calls' ? 'tab-calls-active' : 'tab-calls-hidden'}
+          className={activeTab === 'calls' ? 'tab-pane-transition' : 'hidden'}
         >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          <CallsModule
+            calls={calls}
+            closers={closers}
+            onAddAndAnalyzeCall={handleAddAndAnalyzeCall}
+            onReanalyzeCall={handleReanalyzeCall}
+            preselectedCloserId={preselectedCloserForCalls}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </div>
+      </div>
+
+      {/* Modal de Configurações */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onDataReset={refreshData}
+      />
+    </main>
   );
 }
