@@ -15,12 +15,18 @@ import { ClosersModule } from '@/components/closers/ClosersModule';
 import { CallsModule } from '@/components/calls/CallsModule';
 import { DataService } from '@/lib/dataService';
 import { Closer, SalesCall } from '@/types';
+import { DateRange } from '@/components/dashboard/DateRangePicker';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'closers' | 'calls'>('dashboard');
   const [closers, setClosers] = useState<Closer[]>([]);
   const [calls, setCalls] = useState<SalesCall[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<number>(30);
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    return { start, end, label: 'esteMes' };
+  });
   const [selectedCloserId, setSelectedCloserId] = useState<string>('all');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [preselectedCloserForCalls, setPreselectedCloserForCalls] = useState<string>('');
@@ -37,12 +43,13 @@ export default function Home() {
   // Cálculo das métricas 100% dinâmico e memoizado
   const metrics = useMemo(() => {
     return DataService.getMetrics({
-      periodDays: selectedPeriod,
+      startDate: dateRange.start,
+      endDate: dateRange.end,
       closerId: selectedCloserId,
       calls,
       closers,
     });
-  }, [calls, closers, selectedPeriod, selectedCloserId]);
+  }, [calls, closers, dateRange, selectedCloserId]);
 
   const handleAddCloser = (name: string) => {
     DataService.addCloser(name);
@@ -100,8 +107,8 @@ export default function Home() {
           className={activeTab === 'dashboard' ? 'tab-pane-transition space-y-6' : 'hidden'}
         >
           <DashboardHeader
-            selectedPeriod={selectedPeriod}
-            setSelectedPeriod={setSelectedPeriod}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
             selectedCloserId={selectedCloserId}
             setSelectedCloserId={setSelectedCloserId}
             closers={closers}
@@ -119,7 +126,7 @@ export default function Home() {
 
           <MainChart
             calls={metrics.filteredCalls}
-            periodDays={selectedPeriod}
+            periodDays={Math.max(1, Math.round((dateRange.end.getTime() - dateRange.start.getTime()) / 86400000))}
             callsEvolution={metrics.callsEvolution}
             onGoToCalls={() => setActiveTab('calls')}
           />

@@ -227,6 +227,8 @@ export class DataService {
   // --- MÉTRICAS E INDICADORES DO DASHBOARD ---
   static getMetrics(options?: {
     periodDays?: number;
+    startDate?: Date;
+    endDate?: Date;
     closerId?: string;
     calls?: SalesCall[];
     closers?: Closer[];
@@ -235,21 +237,38 @@ export class DataService {
     const closers = options?.closers || this.getClosers();
 
     const now = new Date();
-    const periodDays = options?.periodDays || 30;
-    const cutoffDate = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
-    const prevCutoffDate = new Date(cutoffDate.getTime() - periodDays * 24 * 60 * 60 * 1000);
+    let cutoffStart: Date;
+    let cutoffEnd: Date;
+    let prevCutoffStart: Date;
+    let prevCutoffEnd: Date;
+
+    if (options?.startDate && options?.endDate) {
+      cutoffStart = new Date(options.startDate);
+      cutoffStart.setHours(0, 0, 0, 0);
+      cutoffEnd = new Date(options.endDate);
+      cutoffEnd.setHours(23, 59, 59, 999);
+      const diffMs = Math.max(86400000, cutoffEnd.getTime() - cutoffStart.getTime());
+      prevCutoffEnd = new Date(cutoffStart.getTime() - 1);
+      prevCutoffStart = new Date(prevCutoffEnd.getTime() - diffMs);
+    } else {
+      const periodDays = options?.periodDays || 30;
+      cutoffStart = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
+      cutoffEnd = now;
+      prevCutoffEnd = cutoffStart;
+      prevCutoffStart = new Date(cutoffStart.getTime() - periodDays * 24 * 60 * 60 * 1000);
+    }
 
     const filteredCalls = allCalls.filter((c) => {
       const matchCloser = !options?.closerId || options.closerId === 'all' || c.closerId === options.closerId;
       const callDate = new Date(c.occurredAt);
-      const matchDate = isNaN(callDate.getTime()) ? true : callDate >= cutoffDate;
+      const matchDate = isNaN(callDate.getTime()) ? true : (callDate >= cutoffStart && callDate <= cutoffEnd);
       return matchCloser && matchDate;
     });
 
     const prevFilteredCalls = allCalls.filter((c) => {
       const matchCloser = !options?.closerId || options.closerId === 'all' || c.closerId === options.closerId;
       const callDate = new Date(c.occurredAt);
-      return matchCloser && !isNaN(callDate.getTime()) && callDate >= prevCutoffDate && callDate < cutoffDate;
+      return matchCloser && !isNaN(callDate.getTime()) && callDate >= prevCutoffStart && callDate <= prevCutoffEnd;
     });
 
     const totalCalls = filteredCalls.length;
