@@ -18,10 +18,10 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="w-full pt-6 pb-4 px-6 md:px-12 flex items-center justify-between">
       {/* Logotipo à esquerda — Logo oficial com o símbolo branco nítido sobre fundo lime */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-xs flex-shrink-0 border border-black/10 bg-[#CEF52A]">
+        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-xs flex-shrink-0 border border-black/10">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo.png"
+            src="/logo.png?v=2"
             alt="Inteligência Comercial"
             width={40}
             height={40}
@@ -90,10 +90,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         <div className="flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-pill bg-white border border-[#E5E7EB] shadow-card">
-          <div className="w-7 h-7 rounded-full overflow-hidden bg-[#CEF52A] border border-black/10 flex-shrink-0 relative">
+          <div className="w-7 h-7 rounded-full overflow-hidden border border-black/10 flex-shrink-0 relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo.png"
+              src="/logo.png?v=2"
               alt="Fazendo Acontecer"
               className="w-full h-full object-cover"
             />
