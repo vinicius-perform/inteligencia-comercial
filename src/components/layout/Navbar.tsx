@@ -90,22 +90,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         <div className="flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-pill bg-white border border-[#E5E7EB] shadow-card">
-          <div className="w-7 h-7 rounded-full overflow-hidden bg-[#F3F4F6] border border-[#E5E7EB] flex-shrink-0 relative">
+          <div className="w-7 h-7 rounded-full overflow-hidden bg-[#CEF52A] border border-black/10 flex-shrink-0 relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-              alt="Alexandre Silva"
+              src="/logo.png"
+              alt="Fazendo Acontecer"
               className="w-full h-full object-cover"
             />
-            {/* Indicador de status online em #CEF52A */}
-            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#CEF52A] border border-white" />
+            {/* Indicador de status online em #0C0C0D */}
+            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#0C0C0D] border border-white" />
           </div>
           <div className="hidden lg:flex flex-col text-left pr-0.5">
             <span className="text-[12px] font-semibold text-[#0C0C0D] tracking-[-0.01em] leading-tight">
-              Alexandre Silva
+              Fazendo Acontecer
             </span>
             <span className="text-[10px] text-[#71717A] tracking-[-0.01em] leading-none">
-              Head de Vendas
+              Inteligência Comercial
             </span>
           </div>
         </div>
