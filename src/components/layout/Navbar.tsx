@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { BarChart3, Users, PhoneCall, Key } from 'lucide-react';
-import { LOGO_BASE64 } from './logoBase64';
 
 interface NavbarProps {
   activeTab: 'dashboard' | 'closers' | 'calls';
@@ -19,12 +18,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="w-full pt-6 pb-4 px-6 md:px-12 flex items-center justify-between">
       {/* Logotipo à esquerda — Logo oficial com o símbolo branco nítido sobre fundo lime */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-xs flex-shrink-0 border border-black/10">
+        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-xs flex-shrink-0 border border-black/10 bg-[#CEF52A]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={LOGO_BASE64}
+            src="/logo.png"
             alt="Inteligência Comercial"
-            className="w-full h-full object-cover"
+            width={40}
+            height={40}
+            className="w-full h-full object-cover block"
           />
         </div>
         <div className="flex flex-col">
